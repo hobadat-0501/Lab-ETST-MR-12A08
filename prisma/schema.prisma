@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Event {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title        String   @db.Text
+  person       String   @db.Text
+  email        String?  @db.Text
+  activityType String   @map("activity_type") @db.Text
+  room         String   @db.Text
+  startAt      DateTime @map("start_at") @db.Timestamptz(6)
+  endAt        DateTime @map("end_at") @db.Timestamptz(6)
+  status       String   @default("pending") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([startAt], map: "events_start_at_idx")
+  @@index([room, startAt, endAt], map: "events_room_time_idx")
+  @@map("events")
+}
+
+model Transaction {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @db.Text
+  description String?  @db.Text
+  amount      BigInt
+  kind        String   @db.Text
+  occurredOn  DateTime @default(dbgenerated("CURRENT_DATE")) @map("occurred_on") @db.Date
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("transactions")
+}
