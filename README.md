@@ -27,3 +27,5 @@ Giữ mật khẩu database trong biến môi trường riêng tư. Không dùng
 ## Triển khai Vercel
 
 Import repo vào Vercel và khai báo `DATABASE_URL`, `DIRECT_URL`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`. Vercel tự nhận diện Next.js; không cần backend riêng.
+
+Nếu ứng dụng báo thiếu cấu hình sau khi deploy, mở `/api/health` trên đúng domain deployment. `databaseUrlPresent` và `directUrlPresent` phải là `true`; endpoint chỉ trả trạng thái có/không, không trả giá trị bí mật. Nếu là `false`, kiểm tra biến được gán cho đúng project và môi trường (Production hoặc Preview), sau đó tạo deployment mới để biến có hiệu lực.
