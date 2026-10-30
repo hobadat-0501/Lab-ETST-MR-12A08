@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ACTIVITY_TYPES, CLOSE_HOUR, OPEN_HOUR, ROOM_LABEL } from '../../lib/constants'
 import { DAY_NAMES, addDays, bookedByLabel, dayISO, eventColor, labDate, labDay, labHour, longDate, mondayOf, pad, request, shortDate, timeText } from '../../lib/format'
-import BookingModal from '../client/BookingModal'
+import BookingModal from './BookingModal'
 import Modal from '../ui/Modal'
 import Select from '../ui/Select'
 import { useToast } from '../ui/Toast'
@@ -66,9 +66,9 @@ export default function Calendar({ admin = false }) {
   async function book(body) {
     setBusy(true)
     try {
-      await request('/api/events', { method: 'POST', body: JSON.stringify(body) })
+      await request(endpoint, { method: 'POST', body: JSON.stringify(body) })
       setBooking(false)
-      notify('Request sent. It will appear on the calendar once approved.')
+      notify(admin ? 'Event created.' : 'Request sent. It will appear on the calendar once approved.')
       await load()
     } catch (e) { notify(e.message) } finally { setBusy(false) }
   }
@@ -90,7 +90,7 @@ export default function Calendar({ admin = false }) {
       <div className="calendar-tools">
         <label className="search-box"><Search size={15} /><input type="search" aria-label="Search events" placeholder="Search" value={query} onChange={e => setQuery(e.target.value)} /></label>
         <Select ariaLabel="Filter by type" value={type} onChange={setType} options={TYPE_FILTER} />
-        {!admin && <button className="primary-button" onClick={() => setBooking(true)}><Plus size={16} />Book</button>}
+        <button className="primary-button" onClick={() => setBooking(true)}><Plus size={16} />{admin ? 'New event' : 'Book'}</button>
       </div>
     </div>
     {error && <p className="notice" role="alert">{error}</p>}
@@ -135,6 +135,6 @@ export default function Calendar({ admin = false }) {
         <button className="secondary-button" type="button" onClick={() => setSelected(null)}>Close</button>
       </div>
     </Modal>}
-    {booking && <BookingModal onClose={() => setBooking(false)} onSubmit={book} onInvalid={notify} busy={busy} />}
+    {booking && <BookingModal admin={admin} onClose={() => setBooking(false)} onSubmit={book} onInvalid={notify} busy={busy} />}
   </section>
 }

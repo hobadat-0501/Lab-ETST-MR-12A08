@@ -28,7 +28,7 @@ function defaults() {
   return { date, start: hhmm(start), end: hhmm(Math.min(start + 60, CLOSE_HOUR * 60)) }
 }
 
-export default function BookingModal({ onClose, onSubmit, onInvalid, busy }) {
+export default function BookingModal({ admin = false, onClose, onSubmit, onInvalid, busy }) {
   const [form, setForm] = useState(() => ({ title: '', person: '', activity_type: ACTIVITY_TYPES[0], report_scope: REPORT_SCOPES[0], email: '', ...defaults() }))
   const set = key => e => setForm(f => ({ ...f, [key]: e.target.value }))
   const setTime = key => e => setForm(f => ({ ...f, [key]: formatTyping(e.target.value) }))
@@ -46,10 +46,10 @@ export default function BookingModal({ onClose, onSubmit, onInvalid, busy }) {
   }
 
   const isReport = form.activity_type === 'Report', isGroup = isReport && form.report_scope === 'Group'
-  const nameLabel = isGroup ? 'Group name or leader' : 'Your name'
+  const nameLabel = isGroup ? 'Group name or leader' : admin ? 'Name' : 'Your name'
   const timeProps = key => ({ required: true, inputMode: 'numeric', autoComplete: 'off', placeholder: 'HH:MM', maxLength: 5, pattern: '([01]?\\d|2[0-3]):[0-5]\\d', title: '24-hour time, e.g. 14:30', value: form[key], onChange: setTime(key), onBlur: finishTime(key) })
 
-  return <Modal title="Book the lab" subtitle="Your booking appears on the calendar once it is approved." onClose={onClose} onSubmit={submit}>
+  return <Modal title={admin ? 'New event' : 'Book the lab'} subtitle={admin ? 'Added to the calendar straight away, no approval needed.' : 'Your booking appears on the calendar once it is approved.'} onClose={onClose} onSubmit={submit}>
     <label>Title<input required minLength="3" maxLength="160" placeholder="e.g. Progress report" value={form.title} onChange={set('title')} /></label>
     <div className="form-row">
       <label>Type<Select value={form.activity_type} onChange={v => setForm(f => ({ ...f, activity_type: v }))} options={TYPE_OPTIONS} /></label>
@@ -68,7 +68,7 @@ export default function BookingModal({ onClose, onSubmit, onInvalid, busy }) {
     <label>Email <span className="optional">(optional)</span><input type="email" autoComplete="email" placeholder="you@example.com" value={form.email} onChange={set('email')} /></label>
     <div className="modal-actions">
       <button className="secondary-button" type="button" onClick={onClose}>Cancel</button>
-      <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Sending…' : 'Book'}</button>
+      <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Saving…' : admin ? 'Create event' : 'Book'}</button>
     </div>
   </Modal>
 }

@@ -18,7 +18,7 @@ npm run dev
 The app has two separate areas that share one calendar component.
 
 - **Client** (`/`, no sign-in): view the lab calendar and book a slot. Only approved bookings are shown, without contact details. A booking always **starts at the moment it is submitted** (the server sets the start time) and the visitor only picks a duration, so past bookings are impossible. Overlaps in the same room are rejected inside a PostgreSQL transaction.
-- **Dashboard** (`/dashboard`, sign-in required): overview, calendar (approved and pending, click an event for details), approvals (with rejection reasons), and finance (add/edit/delete, month/type filters, CSV export).
+- **Dashboard** (`/dashboard`, sign-in required): overview, calendar (approved and pending, click an event for details, **New event** creates one that is approved immediately), approvals (with rejection reasons), and finance (add/edit/delete, month/type filters, CSV export).
 
 Set `ADMIN_USERNAME`, `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` as environment variables (never commit them). Signing in sets an HttpOnly cookie valid for 8 hours; failed sign-ins are rate-limited (5 per 15 minutes). Dashboard pages check the session on the server (`requireAdminPage`) and every `/api/dashboard/*` route re-checks the cookie (`assertAdmin`).
 
@@ -30,9 +30,9 @@ Nothing is deleted automatically. In the dashboard, **Events** lists every booki
 
 ## Layout
 
-- `app/(client)` and `components/client` — client area
+- `app/(client)` — client area
 - `app/dashboard`, `app/api/dashboard` and `components/dashboard` — dashboard area
-- `components/calendar` — week calendar used by both; `components/ui` — modal and toast
+- `components/calendar` — week calendar and booking form used by both areas; `components/ui` — modal and toast
 - `lib/` — validation (zod), queries, serializers and API helpers
 
 After pulling updates run `npx prisma migrate deploy` (latest migration: `20261101000000_english_values`, which converts stored activity types and transaction kinds to English).
