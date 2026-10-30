@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { TRANSACTION_KINDS } from '../../lib/constants'
 import { money, monthLabel, request, txDate } from '../../lib/format'
+import ConfirmDialog from '../ui/ConfirmDialog'
+import MonthPicker from '../ui/MonthPicker'
 import Select from '../ui/Select'
 import { useToast } from '../ui/Toast'
 import TransactionForm from './TransactionForm'
@@ -24,6 +26,7 @@ export default function FinanceView({ transactions, summary, month, kind }) {
   const notify = useToast()
   const [form, setForm] = useState(null) // null = closed, {} = new, {…transaction} = edit
   const [busy, setBusy] = useState(false)
+  const [deleting, setDeleting] = useState(null) // transaction awaiting delete confirmation
   const summaryMonth = monthLabel(month || new Date().toISOString().slice(0, 7))
 
   function filter(next) {
@@ -44,13 +47,14 @@ export default function FinanceView({ transactions, summary, month, kind }) {
     } catch (e) { notify(e.message) } finally { setBusy(false) }
   }
 
-  async function remove(t) {
-    if (!confirm(`Delete "${t.name}"?`)) return
+  async function remove() {
+    setBusy(true)
     try {
-      await request(`/api/dashboard/finance/${t.id}`, { method: 'DELETE' })
+      await request(`/api/dashboard/finance/${deleting.id}`, { method: 'DELETE' })
       notify('Transaction deleted.')
+      setDeleting(null)
       router.refresh()
-    } catch (e) { notify(e.message) }
+    } catch (e) { notify(e.message) } finally { setBusy(false) }
   }
 
   return <>
@@ -64,7 +68,7 @@ export default function FinanceView({ transactions, summary, month, kind }) {
       <div className="panel-head">
         <h2>Transactions <small>{transactions.length}</small></h2>
         <div className="calendar-tools">
-          <input type="month" aria-label="Filter by month" value={month} onChange={e => filter({ month: e.target.value })} />
+          <MonthPicker ariaLabel="Filter by month" value={month || undefined} onChange={m => filter({ month: m })} />
           <Select ariaLabel="Filter by type" value={kind} onChange={v => filter({ kind: v })} options={KIND_FILTER} />
           {(month || kind) && <button className="outline-button" onClick={() => router.push('/dashboard/finance')}>Clear</button>}
           <button className="outline-button" onClick={() => exportCsv(transactions, `lab-finance${month ? `-${month}` : ''}.csv`)} disabled={!transactions.length}><ArrowDownToLine size={15} />Export CSV</button>
@@ -79,11 +83,12 @@ export default function FinanceView({ transactions, summary, month, kind }) {
             <td>{txDate(t.occurred_on)}</td>
             <td><span className={`badge ${income ? 'confirmed' : 'rejected'}`}>{t.kind}</span></td>
             <td className={`num${income ? ' income' : ''}`}>{income ? '+' : '−'}{money(t.amount)}</td>
-            <td className="row-actions"><button className="icon-button" aria-label={`Edit ${t.name}`} onClick={() => setForm(t)}><Pencil size={15} /></button><button className="icon-button" aria-label={`Delete ${t.name}`} onClick={() => remove(t)}><Trash2 size={15} /></button></td>
+            <td className="row-actions"><button className="icon-button" aria-label={`Edit ${t.name}`} onClick={() => setForm(t)}><Pencil size={15} /></button><button className="icon-button" aria-label={`Delete ${t.name}`} onClick={() => setDeleting(t)}><Trash2 size={15} /></button></td>
           </tr>
         })}</tbody>
       </table></div> : <p className="empty">No matching transactions.</p>}
     </section>
+    {deleting && <ConfirmDialog title="Delete transaction?" message={`"${deleting.name}" will be permanently deleted. This cannot be undone.`} busy={busy} onConfirm={remove} onClose={() => !busy && setDeleting(null)} />}
     {form && <TransactionForm transaction={form.id ? form : null} onClose={() => setForm(null)} onSubmit={save} busy={busy} />}
   </>
 }

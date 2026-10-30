@@ -241,3 +241,11 @@ th.check, td.check { width: 40px; padding-right: 0 }
 input[type="checkbox"] { width: 17px; height: 17px; padding: 0; accent-color: var(--accent); cursor: pointer }
 tr.selected td { background: var(--accent-soft) }
 .muted { color: var(--muted) }
+
+/* Confirm dialog and month picker */
+.confirm-text { color: var(--muted) }
+.danger-button.solid { background: var(--danger); color: #fff }
+.danger-button.solid:hover:not(:disabled) { background: #9c2f24 }
+.date-nav.year-only { grid-template-columns: 32px 1fr 32px }
+.date-grid.months { grid-template-columns: repeat(3, 1fr) }
+.date-grid.months .date-day { height: 44px }

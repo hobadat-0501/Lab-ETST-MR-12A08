@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { ACTIVITY_TYPES } from '../../lib/constants'
 import { longDate, request, timeText } from '../../lib/format'
+import ConfirmDialog from '../ui/ConfirmDialog'
 import DatePicker from '../ui/DatePicker'
 import Select from '../ui/Select'
 import { useToast } from '../ui/Toast'
@@ -18,6 +19,7 @@ export default function EventsManager({ events, filters }) {
   const allBox = useRef(null)
   const [selected, setSelected] = useState(() => new Set())
   const [busy, setBusy] = useState(false)
+  const [confirming, setConfirming] = useState(false)
   const [query, setQuery] = useState(filters.q)
 
   const hasFilters = Object.values(filters).some(Boolean)
@@ -35,12 +37,12 @@ export default function EventsManager({ events, filters }) {
   const toggleAll = () => setSelected(allSelected ? new Set() : new Set(events.map(e => e.id)))
 
   async function remove() {
-    if (!confirm(`Permanently delete ${count} selected event${count === 1 ? '' : 's'}? This cannot be undone.`)) return
     setBusy(true)
     try {
       const { deleted } = await request('/api/dashboard/events', { method: 'DELETE', body: JSON.stringify({ ids: [...selected] }) })
       notify(`Deleted ${deleted} event${deleted === 1 ? '' : 's'}.`)
       setSelected(new Set())
+      setConfirming(false)
       router.refresh()
     } catch (e) { notify(e.message) } finally { setBusy(false) }
   }
@@ -63,7 +65,7 @@ export default function EventsManager({ events, filters }) {
 
       <div className="bulk-bar">
         <span>{count ? `${count} selected` : `${events.length} event${events.length === 1 ? '' : 's'}${hasFilters ? ' match the filters' : ''}${events.length === 500 ? ' (showing the first 500)' : ''}`}</span>
-        <button className="danger-button" disabled={!count || busy} onClick={remove}><Trash2 size={15} />{busy ? 'Deleting…' : `Delete selected${count ? ` (${count})` : ''}`}</button>
+        <button className="danger-button" disabled={!count} onClick={() => setConfirming(true)}><Trash2 size={15} />{`Delete selected${count ? ` (${count})` : ''}`}</button>
       </div>
 
       {events.length ? <div className="table-wrap"><table>
@@ -80,5 +82,6 @@ export default function EventsManager({ events, filters }) {
         </tr>)}</tbody>
       </table></div> : <p className="empty">No events found.</p>}
     </section>
+    {confirming && <ConfirmDialog title={`Delete ${count} event${count === 1 ? '' : 's'}?`} message="The selected events will be permanently deleted from the calendar and the database. This cannot be undone." confirmLabel={`Delete ${count}`} busy={busy} onConfirm={remove} onClose={() => !busy && setConfirming(false)} />}
   </>
 }
