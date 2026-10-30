@@ -1,6 +1,8 @@
 'use client'
 import { Check, ChevronDown } from 'lucide-react'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { useFloating } from './useFloating'
 
 // Custom dropdown (replaces the native <select>). options: [{ value, label }].
 export default function Select({ value, onChange, options, ariaLabel }) {
@@ -10,12 +12,8 @@ export default function Select({ value, onChange, options, ariaLabel }) {
   const [active, setActive] = useState(0)
   const selected = Math.max(0, options.findIndex(o => o.value === value))
 
-  useEffect(() => {
-    if (!open) return
-    const onDown = e => root.current && !root.current.contains(e.target) && setOpen(false)
-    document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
-  }, [open])
+  const close = useCallback(() => setOpen(false), [])
+  const floating = useFloating(open, root, close)
 
   const show = () => { setActive(selected); setOpen(true) }
   const choose = i => { onChange(options[i].value); setOpen(false) }
@@ -41,11 +39,11 @@ export default function Select({ value, onChange, options, ariaLabel }) {
       onClick={() => open ? setOpen(false) : show()} onKeyDown={onKeyDown}>
       <span>{options[selected]?.label}</span><ChevronDown size={16} />
     </button>
-    {open && <ul className="select-menu" id={listId} role="listbox">
+    {open && createPortal(<ul className="select-menu" id={listId} role="listbox" data-floating ref={floating.panel} style={floating.style}>
       {options.map((o, i) => <li key={o.value} id={`${listId}-${i}`} role="option" aria-selected={i === selected}
         className={`select-option${i === active ? ' active' : ''}`} onMouseEnter={() => setActive(i)} onMouseDown={e => e.preventDefault()} onClick={() => choose(i)}>
         <span>{o.label}</span>{i === selected && <Check size={15} />}
       </li>)}
-    </ul>}
+    </ul>, document.body)}
   </div>
 }

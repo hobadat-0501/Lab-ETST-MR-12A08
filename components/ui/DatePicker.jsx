@@ -1,8 +1,10 @@
 'use client'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { addDays, dayISO, txDate } from '../../lib/format'
 import Select from './Select'
+import { useFloating } from './useFloating'
 
 const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 const parse = iso => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d) }
@@ -25,12 +27,8 @@ export default function DatePicker({ value, onChange, min, ariaLabel }) {
   const lastYear = Math.max(thisYear + 5, view.getFullYear())
   const yearOptions = Array.from({ length: lastYear - firstYear + 1 }, (_, i) => ({ value: firstYear + i, label: String(firstYear + i) }))
 
-  useEffect(() => {
-    if (!open) return
-    const onDown = e => root.current && !root.current.contains(e.target) && setOpen(false)
-    document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
-  }, [open])
+  const close = useCallback(() => setOpen(false), [])
+  const floating = useFloating(open, root, close)
 
   useEffect(() => { if (open) root.current?.querySelector(`[data-day="${focus}"]`)?.focus() }, [open, focus])
 
@@ -53,11 +51,11 @@ export default function DatePicker({ value, onChange, min, ariaLabel }) {
     if (allowed(next)) setFocus(next)
   }
 
-  return <div className="select date-picker" ref={root} onKeyDown={onKeyDown}>
+  return <div className="select date-picker" ref={root}>
     <button type="button" className="select-button" aria-label={ariaLabel} aria-haspopup="dialog" aria-expanded={open} aria-controls={popId} onClick={() => open ? setOpen(false) : show()}>
       <span>{txDate(value)}</span><CalendarDays size={16} />
     </button>
-    {open && <div className="select-menu date-pop" id={popId} role="dialog" aria-label="Choose a date">
+    {open && createPortal(<div className="date-pop" ref={floating.panel} id={popId} role="dialog" aria-label="Choose a date" onKeyDown={onKeyDown} data-floating style={floating.style}>
       <div className="date-nav">
         <button type="button" className="icon-button" aria-label="Previous month" onClick={() => moveMonth(-1)}><ChevronLeft size={16} /></button>
         <Select ariaLabel="Month" value={view.getMonth()} onChange={m => goTo(view.getFullYear(), m)} options={MONTHS} />
@@ -72,6 +70,6 @@ export default function DatePicker({ value, onChange, min, ariaLabel }) {
             className={`date-day${d.getMonth() !== view.getMonth() ? ' outside' : ''}${iso === today ? ' today' : ''}${iso === value ? ' selected' : ''}`} onClick={() => pick(iso)}>{d.getDate()}</button>
         })}
       </div>
-    </div>}
+    </div>, document.body)}
   </div>
 }
