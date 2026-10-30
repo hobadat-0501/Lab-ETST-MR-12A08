@@ -130,6 +130,6 @@ export default function Calendar({ admin = false }) {
         <button className="secondary-button" type="button" onClick={() => setSelected(null)}>Close</button>
       </div>
     </Modal>}
-    {booking && <BookingModal onClose={() => setBooking(false)} onSubmit={book} busy={busy} />}
+    {booking && <BookingModal onClose={() => setBooking(false)} onSubmit={book} onInvalid={notify} busy={busy} />}
   </section>
 }
