@@ -2,10 +2,10 @@ import { ToastProvider } from '../components/ui/Toast'
 import './globals.css'
 
 export const metadata = {
-  title: 'Lab ETST-MR 12A08 — Lịch phòng lab',
-  description: 'Lịch hoạt động và quản lý thu chi Lab ETST-MR 12A08',
+  title: { default: 'ETST-MR', template: '%s · ETST-MR' },
+  description: 'ETST-MR lab schedule and management',
 }
 
 export default function RootLayout({ children }) {
-  return <html lang="vi"><body><ToastProvider>{children}</ToastProvider></body></html>
+  return <html lang="en"><body><ToastProvider>{children}</ToastProvider></body></html>
 }

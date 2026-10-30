@@ -1,14 +1,24 @@
 'use client'
 import { X } from 'lucide-react'
+import { useEffect, useId } from 'react'
 
-export default function Modal({ icon: Icon, title, subtitle, onClose, onSubmit, className = '', children }) {
+// Dialog that closes on Escape or a backdrop click. Renders a <form> when onSubmit is given.
+export default function Modal({ title, subtitle, onClose, onSubmit, children }) {
+  const titleId = useId()
+  const Body = onSubmit ? 'form' : 'div'
+  useEffect(() => {
+    const onKey = e => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
   return <div className="overlay" onMouseDown={e => e.target === e.currentTarget && onClose()}>
-    <form className={`modal ${className}`} onSubmit={onSubmit}>
+    <Body className="modal" role="dialog" aria-modal="true" aria-labelledby={titleId} onSubmit={onSubmit}>
       <div className="modal-head">
-        <div>{Icon && <span className="modal-icon"><Icon size={19} /></span>}<h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div>
-        <button type="button" className="close-button" aria-label="Đóng" onClick={onClose}><X size={19} /></button>
+        <div><h2 id={titleId}>{title}</h2>{subtitle && <p>{subtitle}</p>}</div>
+        <button type="button" className="icon-button" aria-label="Close" onClick={onClose}><X size={18} /></button>
       </div>
       {children}
-    </form>
+    </Body>
   </div>
 }
