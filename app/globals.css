@@ -16,6 +16,18 @@ a { color: inherit; text-decoration: none }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap }
 
+/* Custom dropdown */
+.select { position: relative }
+.select-button { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-weight: 400; text-align: left }
+.select-button:hover { border-color: #c9d1cb }
+.select-button svg { flex: none; color: var(--muted) }
+.select-button[aria-expanded="true"] svg { transform: rotate(180deg) }
+.select-menu { position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; min-width: 100%; margin: 0; padding: 4px; list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 10px 28px rgb(0 0 0 / .14) }
+.select-option { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; border-radius: 6px; font-weight: 400; white-space: nowrap; cursor: pointer }
+.select-option.active { background: var(--accent-soft) }
+.select-option[aria-selected="true"] { color: var(--accent); font-weight: 600 }
+.calendar-tools .select { min-width: 140px }
+
 /* Form controls */
 label { display: grid; gap: 6px; font-size: 13px; font-weight: 600 }
 input, select { height: 40px; width: 100%; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 0 12px; font-weight: 400 }
@@ -75,9 +87,8 @@ input:hover, select:hover { border-color: #c9d1cb }
 .day-head b { font-size: 19px; color: var(--ink); line-height: 1.3 }
 .day-head.today b { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff }
 .time-col { display: grid; grid-auto-rows: var(--hour) }
-.time-col span { margin-top: -8px; padding-right: 6px; text-align: right; font-size: 11px; color: var(--muted) }
-.time-col span:first-child { visibility: hidden }
-.day-col { position: relative; height: calc(var(--hour) * 24); border-left: 1px solid var(--line); background-image: linear-gradient(var(--line) 1px, transparent 1px); background-size: 100% var(--hour) }
+.time-col span { padding: 3px 6px 0 0; text-align: right; font-size: 11px; color: var(--muted) }
+.day-col { position: relative; height: calc(var(--hour) * var(--hours)); border-left: 1px solid var(--line); background-image: linear-gradient(var(--line) 1px, transparent 1px); background-size: 100% var(--hour) }
 .day-col.today { background-color: #fafcf9 }
 .event { position: absolute; display: grid; align-content: start; gap: 1px; overflow: hidden; padding: 4px 7px; border: 0; border-left: 3px solid; border-radius: 6px; text-align: left; font-size: 12px; transition: filter .15s }
 .event:hover { filter: brightness(.96) }
@@ -179,3 +190,17 @@ td { padding: 12px 8px; border-bottom: 1px solid var(--line); vertical-align: mi
   .modal-actions { flex-direction: column-reverse } .modal-actions > * { width: 100% }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+
+/* Date picker */
+.date-pop { width: 280px; padding: 10px }
+.date-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px }
+.date-nav .icon-button { width: 32px; height: 32px }
+.date-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px }
+.date-weekday { padding: 4px 0; text-align: center; font-size: 11px; font-weight: 600; color: var(--muted) }
+.date-day { height: 34px; border: 0; border-radius: 8px; background: transparent; font-weight: 400 }
+.date-day:hover:not(:disabled) { background: var(--accent-soft) }
+.date-day.outside { color: #aab4af }
+.date-day.today { box-shadow: inset 0 0 0 1px var(--accent) }
+.date-day.selected { background: var(--accent); color: #fff; font-weight: 700 }
+.date-day:disabled { color: #c9d1cc; text-decoration: line-through }
+.hint { font-size: 12px; color: var(--muted); margin: -6px 0 0 }

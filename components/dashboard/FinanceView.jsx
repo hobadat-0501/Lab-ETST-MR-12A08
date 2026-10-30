@@ -4,9 +4,11 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { TRANSACTION_KINDS } from '../../lib/constants'
 import { money, monthLabel, request, txDate } from '../../lib/format'
+import Select from '../ui/Select'
 import { useToast } from '../ui/Toast'
 import TransactionForm from './TransactionForm'
 
+const KIND_FILTER = [{ value: '', label: 'All types' }, ...TRANSACTION_KINDS.map(k => ({ value: k, label: k }))]
 const csvCell = x => `"${String(x).replaceAll('"', '""')}"`
 
 function exportCsv(transactions, filename) {
@@ -63,7 +65,7 @@ export default function FinanceView({ transactions, summary, month, kind }) {
         <h2>Transactions <small>{transactions.length}</small></h2>
         <div className="calendar-tools">
           <input type="month" aria-label="Filter by month" value={month} onChange={e => filter({ month: e.target.value })} />
-          <select aria-label="Filter by type" value={kind} onChange={e => filter({ kind: e.target.value })}><option value="">All types</option>{TRANSACTION_KINDS.map(k => <option key={k}>{k}</option>)}</select>
+          <Select ariaLabel="Filter by type" value={kind} onChange={v => filter({ kind: v })} options={KIND_FILTER} />
           {(month || kind) && <button className="outline-button" onClick={() => router.push('/dashboard/finance')}>Clear</button>}
           <button className="outline-button" onClick={() => exportCsv(transactions, `lab-finance${month ? `-${month}` : ''}.csv`)} disabled={!transactions.length}><ArrowDownToLine size={15} />Export CSV</button>
         </div>

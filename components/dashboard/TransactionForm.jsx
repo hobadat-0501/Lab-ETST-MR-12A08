@@ -2,7 +2,11 @@
 import { useState } from 'react'
 import { TRANSACTION_KINDS } from '../../lib/constants'
 import { dayISO } from '../../lib/format'
+import DatePicker from '../ui/DatePicker'
 import Modal from '../ui/Modal'
+import Select from '../ui/Select'
+
+const KIND_OPTIONS = TRANSACTION_KINDS.map(k => ({ value: k, label: k }))
 
 export default function TransactionForm({ transaction, onClose, onSubmit, busy }) {
   const [form, setForm] = useState({
@@ -16,8 +20,8 @@ export default function TransactionForm({ transaction, onClose, onSubmit, busy }
     <label>Title<input required minLength="2" maxLength="160" value={form.name} onChange={set('name')} placeholder="e.g. Lab supplies" /></label>
     <label>Description <span className="optional">(optional)</span><input maxLength="500" value={form.description} onChange={set('description')} /></label>
     <div className="form-row">
-      <label>Type<select value={form.kind} onChange={set('kind')}>{TRANSACTION_KINDS.map(k => <option key={k}>{k}</option>)}</select></label>
-      <label>Date<input required type="date" value={form.occurred_on} onChange={set('occurred_on')} /></label>
+      <label>Type<Select value={form.kind} onChange={v => setForm(f => ({ ...f, kind: v }))} options={KIND_OPTIONS} /></label>
+      <label>Date<DatePicker value={form.occurred_on} onChange={v => setForm(f => ({ ...f, occurred_on: v }))} /></label>
     </div>
     <label>Amount (₫)<input required type="number" min="1" step="1" inputMode="numeric" value={form.amount} onChange={set('amount')} placeholder="0" /></label>
     <div className="modal-actions">

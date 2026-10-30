@@ -1,14 +1,17 @@
 'use client'
 import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react'
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ACTIVITY_TYPES } from '../../lib/constants'
-import { DAY_NAMES, HOURS, addDays, dayISO, eventColor, hourOf, longDate, mondayOf, pad, request, shortDate, timeText } from '../../lib/format'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ACTIVITY_TYPES, CLOSE_HOUR, OPEN_HOUR } from '../../lib/constants'
+import { DAY_NAMES, addDays, dayISO, eventColor, labDate, labDay, labHour, longDate, mondayOf, pad, request, shortDate, timeText } from '../../lib/format'
 import BookingModal from '../client/BookingModal'
 import Modal from '../ui/Modal'
+import Select from '../ui/Select'
 import { useToast } from '../ui/Toast'
 
 const HOUR_PX = 56
+const HOURS = Array.from({ length: CLOSE_HOUR - OPEN_HOUR }, (_, i) => OPEN_HOUR + i)
+const TYPE_FILTER = [{ value: '', label: 'All types' }, ...ACTIVITY_TYPES.map(t => ({ value: t, label: t }))]
 const STATUS_LABEL = { pending: 'Pending approval', confirmed: 'Approved', rejected: 'Rejected' }
 
 // Splits one day's events into side-by-side lanes so overlapping events (different rooms) stay visible.
@@ -33,7 +36,6 @@ function layoutDay(events) {
 // Week calendar shared by both areas. The client sees approved events and can book; the dashboard also sees pending ones.
 export default function Calendar({ admin = false }) {
   const notify = useToast()
-  const scroller = useRef(null)
   const [weekStart, setWeekStart] = useState(null) // set after mount so server and browser agree on "today"
   const [events, setEvents] = useState([])
   const [error, setError] = useState('')
@@ -49,7 +51,7 @@ export default function Calendar({ admin = false }) {
   const load = useCallback(async () => {
     if (!weekStart) return
     try {
-      const params = new URLSearchParams({ from: weekStart.toISOString(), to: addDays(weekStart, 7).toISOString() })
+      const params = new URLSearchParams({ from: labDate(dayISO(weekStart), '00:00').toISOString(), to: labDate(dayISO(addDays(weekStart, 7)), '00:00').toISOString() })
       setEvents(await request(`${endpoint}?${params}`))
       setError('')
     } catch (e) { setEvents([]); setError(e.message) }
@@ -57,7 +59,6 @@ export default function Calendar({ admin = false }) {
 
   useEffect(() => { setWeekStart(mondayOf(new Date())) }, [])
   useEffect(() => { load() }, [load])
-  useEffect(() => { if (weekStart && scroller.current && !scroller.current.scrollTop) scroller.current.scrollTop = 7 * HOUR_PX }, [weekStart])
 
   async function book(body) {
     setBusy(true)
@@ -73,7 +74,7 @@ export default function Calendar({ admin = false }) {
 
   const needle = query.trim().toLowerCase()
   const visible = events.filter(e => (!type || e.activity_type === type) && (!needle || `${e.title} ${e.person} ${e.room}`.toLowerCase().includes(needle)))
-  const today = dayISO(new Date())
+  const today = labDay(new Date())
 
   return <section className="calendar">
     <div className="calendar-toolbar">
@@ -85,26 +86,27 @@ export default function Calendar({ admin = false }) {
       </div>
       <div className="calendar-tools">
         <label className="search-box"><Search size={15} /><input type="search" aria-label="Search events" placeholder="Search" value={query} onChange={e => setQuery(e.target.value)} /></label>
-        <select aria-label="Filter by type" value={type} onChange={e => setType(e.target.value)}><option value="">All types</option>{ACTIVITY_TYPES.map(t => <option key={t}>{t}</option>)}</select>
+        <Select ariaLabel="Filter by type" value={type} onChange={setType} options={TYPE_FILTER} />
         {!admin && <button className="primary-button" onClick={() => setBooking(true)}><Plus size={16} />Book</button>}
       </div>
     </div>
     {error && <p className="notice" role="alert">{error}</p>}
 
-    <div className="week" ref={scroller}>
+    <div className="week">
       <div className="week-head">
         <div />
         {days.map(d => <div key={dayISO(d)} className={`day-head${dayISO(d) === today ? ' today' : ''}`}><span>{DAY_NAMES[d.getDay()]}</span><b>{d.getDate()}</b></div>)}
       </div>
-      <div className="week-body" style={{ '--hour': `${HOUR_PX}px` }}>
+      <div className="week-body" style={{ '--hour': `${HOUR_PX}px`, '--hours': HOURS.length }}>
         <div className="time-col">{HOURS.map(h => <span key={h}>{pad(h)}:00</span>)}</div>
         {days.map(d => {
           const iso = dayISO(d)
           return <div key={iso} className={`day-col${iso === today ? ' today' : ''}`}>
-            {layoutDay(visible.filter(e => dayISO(new Date(e.start_at)) === iso)).map(({ event: e, lane, lanes }) => {
-              const start = hourOf(e.start_at), end = dayISO(new Date(e.end_at)) === iso ? hourOf(e.end_at) : 24
+            {layoutDay(visible.filter(e => labDay(e.start_at) === iso)).map(({ event: e, lane, lanes }) => {
+              const start = Math.max(OPEN_HOUR, labHour(e.start_at)), end = labDay(e.end_at) === iso ? Math.min(CLOSE_HOUR, labHour(e.end_at)) : CLOSE_HOUR
+              if (end <= start) return null // outside opening hours (legacy data)
               return <button key={e.id} className={`event ${eventColor(e)}`} onClick={() => setSelected(e)}
-                style={{ top: start * HOUR_PX + 1, height: Math.max(22, (end - start) * HOUR_PX - 2), left: `calc(${lane / lanes * 100}% + 2px)`, width: `calc(${100 / lanes}% - 4px)` }}>
+                style={{ top: (start - OPEN_HOUR) * HOUR_PX + 1, height: Math.max(22, (end - start) * HOUR_PX - 2), left: `calc(${lane / lanes * 100}% + 2px)`, width: `calc(${100 / lanes}% - 4px)` }}>
                 <strong>{e.title}</strong><span>{timeText(e.start_at)} – {timeText(e.end_at)} · {e.room}</span>
               </button>
             })}
