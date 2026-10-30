@@ -18,6 +18,7 @@ model Event {
   startAt      DateTime @map("start_at") @db.Timestamptz(6)
   endAt        DateTime @map("end_at") @db.Timestamptz(6)
   status       String   @default("pending") @db.Text
+  rejectReason String?  @map("reject_reason") @db.Text
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([startAt], map: "events_start_at_idx")
@@ -33,6 +34,8 @@ model Transaction {
   kind        String   @db.Text
   occurredOn  DateTime @default(dbgenerated("CURRENT_DATE")) @map("occurred_on") @db.Date
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  @@index([occurredOn], map: "transactions_occurred_on_idx")
   @@map("transactions")
 }

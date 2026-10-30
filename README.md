@@ -24,7 +24,32 @@ Giữ mật khẩu database trong biến môi trường riêng tư. Không dùng
 
 Đăng nhập tạo cookie HttpOnly thời hạn 8 giờ. API thu chi và duyệt lịch xác thực cookie phía server. Khách có thể xem lịch đã xác nhận và gửi đăng ký mà không cần tài khoản. Các đăng ký được kiểm tra trùng phòng/giờ trong transaction PostgreSQL trước khi lưu.
 
-## Triển khai Vercel
+## Cấu trúc
+
+- `/` — trang khách: xem lịch đã xác nhận, đăng ký lịch. Không chứa thu chi hay duyệt.
+- `/admin/login` — đăng nhập quản lý (rate-limit 5 lần sai / 15 phút).
+- `/admin` — tổng quan; `/admin/approvals` — duyệt đăng ký (có lý do từ chối, chặn trùng lịch); `/admin/finance` — thu chi (thêm/sửa/xoá, lọc tháng/loại, xuất CSV).
+- Trang admin kiểm tra phiên ở server (`requireAdminPage`) và API kiểm tra lại cookie (`assertAdmin`).
+- `lib/` chứa validate (zod), serializer, truy vấn và helper API dùng chung; `components/` chia theo `client`, `admin`, `ui`.
+
+Sau khi cập nhật code cần chạy `npx prisma migrate deploy` (migration `20261031000000_admin_dashboard`).
+
+## Triển khai tự động lên Vercel
+
+Workflow `.github/workflows/deploy.yml` chạy khi push `main` (production) hoặc mở PR (preview): build kiểm tra → tạo biến môi trường còn thiếu trên Vercel → `prisma migrate deploy` (chỉ main) → build & deploy.
+
+Thêm GitHub Secrets (Settings → Secrets and variables → Actions):
+
+| Secret | Nguồn |
+| --- | --- |
+| `VERCEL_TOKEN` | Vercel → Account Settings → Tokens |
+| `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` | `.vercel/project.json` sau khi chạy `npx vercel link` |
+| `DATABASE_URL`, `DIRECT_URL` | Supabase connection strings |
+| `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET` | Tự đặt |
+
+Biến nào đã có trên Vercel sẽ được giữ nguyên; chỉ biến chưa có mới được tạo từ secret cùng tên.
+
+## Triển khai Vercel thủ công
 
 Import repo vào Vercel và khai báo `DATABASE_URL`, `DIRECT_URL`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`. Vercel tự nhận diện Next.js; không cần backend riêng.
 

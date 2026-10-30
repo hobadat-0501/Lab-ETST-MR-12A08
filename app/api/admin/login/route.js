@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server'
-import { COOKIE_NAME, createSession, credentialsMatch } from '../../../../lib/auth'
+import { COOKIE_NAME, SESSION_SECONDS, createSession, credentialsMatch, sessionCookieOptions } from '../../../../lib/auth'
+import { ApiError, parse, readJson, route } from '../../../../lib/http'
+import { clearFailures, clientKey, isBlocked, recordFailure } from '../../../../lib/rate-limit'
+import { loginInput } from '../../../../lib/validators'
 
-export async function POST(request) {
-  let body
-  try { body = await request.json() } catch { return NextResponse.json({ error: 'Dữ liệu đăng nhập không hợp lệ.' }, { status: 400 }) }
-  if (!process.env.ADMIN_SESSION_SECRET) return NextResponse.json({ error: 'Chưa cấu hình phiên đăng nhập quản lý.' }, { status: 503 })
-  if (!credentialsMatch(body.username, body.password)) return NextResponse.json({ error: 'Tên đăng nhập hoặc mật khẩu không đúng.' }, { status: 401 })
+export const POST = route(async request => {
+  const key = clientKey(request)
+  if (isBlocked(key)) throw new ApiError('Đăng nhập sai quá nhiều lần. Vui lòng thử lại sau 15 phút.', 429)
+  const { username, password } = parse(loginInput, await readJson(request))
+  if (!process.env.ADMIN_SESSION_SECRET) throw new ApiError('Chưa cấu hình phiên đăng nhập quản lý.', 503)
+  if (!credentialsMatch(username, password)) {
+    recordFailure(key)
+    throw new ApiError('Tên đăng nhập hoặc mật khẩu không đúng.', 401)
+  }
+  clearFailures(key)
   const response = NextResponse.json({ ok: true, username: process.env.ADMIN_USERNAME })
-  response.cookies.set(COOKIE_NAME, createSession(process.env.ADMIN_USERNAME), { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 8 * 60 * 60 })
+  response.cookies.set(COOKIE_NAME, createSession(process.env.ADMIN_USERNAME), sessionCookieOptions(SESSION_SECONDS))
   return response
-}
+})

@@ -1,14 +1,11 @@
-import { NextResponse } from 'next/server'
-import { isAdminRequest } from '../../../../lib/auth'
-import { databaseErrorMessage, prisma } from '../../../../lib/prisma'
+import { setEventStatus } from '../../../../lib/events'
+import { assertAdmin, ok, parse, readJson, route } from '../../../../lib/http'
+import { eventStatusInput } from '../../../../lib/validators'
 
-export async function PATCH(request, context) {
-  if (!isAdminRequest(request)) return NextResponse.json({ error: 'Bạn cần đăng nhập quản lý.' }, { status: 401 })
-  try {
-    const { status } = await request.json()
-    if (!['confirmed', 'rejected'].includes(status)) return NextResponse.json({ error: 'Trạng thái không hợp lệ.' }, { status: 400 })
-    const { id } = await context.params
-    const data = await prisma.event.update({ where: { id }, data: { status } })
-    return NextResponse.json({ id: data.id, status: data.status })
-  } catch { return NextResponse.json({ error: databaseErrorMessage() }, { status: 503 }) }
-}
+export const PATCH = route(async (request, context) => {
+  assertAdmin(request)
+  const { status, reject_reason } = parse(eventStatusInput, await readJson(request))
+  const { id } = await context.params
+  const event = await setEventStatus(id, status, reject_reason)
+  return ok({ id: event.id, status: event.status })
+})

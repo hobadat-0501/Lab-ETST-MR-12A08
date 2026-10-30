@@ -1,32 +1,19 @@
-import { NextResponse } from 'next/server'
-import { isAdminRequest } from '../../../lib/auth'
-import { databaseErrorMessage, prisma } from '../../../lib/prisma'
+import { assertAdmin, ok, parse, readJson, route } from '../../../lib/http'
+import { prisma } from '../../../lib/prisma'
+import { listTransactions } from '../../../lib/queries'
+import { toApiTransaction, toTransactionData } from '../../../lib/serializers'
+import { transactionInput } from '../../../lib/validators'
 
-const toApiTransaction = t => ({
-  id: t.id, name: t.name, description: t.description,
-  amount: Number(t.amount), kind: t.kind,
-  occurred_on: t.occurredOn.toISOString().slice(0, 10),
-  created_at: t.createdAt.toISOString(),
+export const GET = route(async request => {
+  assertAdmin(request)
+  const params = new URL(request.url).searchParams
+  const data = await listTransactions({ month: params.get('month'), kind: params.get('kind') })
+  return ok(data.map(toApiTransaction))
 })
 
-export async function GET(request) {
-  if (!isAdminRequest(request)) return NextResponse.json({ error: 'Bạn cần đăng nhập quản lý.' }, { status: 401 })
-  try {
-    const data = await prisma.transaction.findMany({ orderBy: [{ occurredOn: 'desc' }, { createdAt: 'desc' }] })
-    return NextResponse.json(data.map(toApiTransaction))
-  } catch { return NextResponse.json({ error: databaseErrorMessage() }, { status: 503 }) }
-}
-
-export async function POST(request) {
-  if (!isAdminRequest(request)) return NextResponse.json({ error: 'Bạn cần đăng nhập quản lý.' }, { status: 401 })
-  try {
-    const body = await request.json()
-    const amount = Number(body.amount)
-    const occurredOn = new Date(`${body.occurred_on}T00:00:00.000Z`)
-    if (typeof body.name !== 'string' || body.name.trim().length < 2 || !Number.isSafeInteger(amount) || amount <= 0 || !['Thu', 'Chi'].includes(body.kind) || Number.isNaN(+occurredOn)) {
-      return NextResponse.json({ error: 'Vui lòng kiểm tra nội dung, loại, ngày và số tiền.' }, { status: 400 })
-    }
-    const data = await prisma.transaction.create({ data: { name: body.name.trim(), description: body.description?.trim() || null, amount: BigInt(amount), kind: body.kind, occurredOn } })
-    return NextResponse.json(toApiTransaction(data), { status: 201 })
-  } catch { return NextResponse.json({ error: databaseErrorMessage() }, { status: 503 }) }
-}
+export const POST = route(async request => {
+  assertAdmin(request)
+  const input = parse(transactionInput, await readJson(request))
+  const data = await prisma.transaction.create({ data: toTransactionData(input) })
+  return ok(toApiTransaction(data), 201)
+})

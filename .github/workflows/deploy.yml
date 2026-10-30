@@ -1,0 +1,86 @@
+name: CI & Deploy (Vercel)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  NODE_VERSION: 22
+
+jobs:
+  build:
+    name: Build kiểm tra
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: npm }
+      - run: npm ci
+      - run: npx prisma validate
+        env:
+          DATABASE_URL: postgresql://user:pass@localhost:5432/db
+          DIRECT_URL: postgresql://user:pass@localhost:5432/db
+      - run: npm run build
+
+  deploy:
+    name: Deploy lên Vercel
+    needs: build
+    runs-on: ubuntu-latest
+    # PR từ fork không có secrets nên bỏ qua.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: npm }
+
+      - name: Kiểm tra secrets Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          for v in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            [ -n "${!v}" ] || { echo "::error::Thiếu GitHub Secret $v (xem README → Triển khai tự động)"; exit 1; }
+          done
+
+      - run: npm ci
+
+      - name: Đồng bộ biến môi trường lên Vercel (chỉ tạo biến còn thiếu)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_SESSION_SECRET: ${{ secrets.ADMIN_SESSION_SECRET }}
+        run: ./scripts/sync-vercel-env.sh
+
+      - name: Migrate database (chỉ nhánh main)
+        if: github.ref == 'refs/heads/main'
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+
+      - name: Build & deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          TARGET: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
+        run: |
+          npx --yes vercel@latest pull --yes --environment="$TARGET" --token "$VERCEL_TOKEN"
+          if [ "$TARGET" = production ]; then
+            npx --yes vercel@latest build --prod --token "$VERCEL_TOKEN"
+            url=$(npx --yes vercel@latest deploy --prebuilt --prod --token "$VERCEL_TOKEN")
+          else
+            npx --yes vercel@latest build --token "$VERCEL_TOKEN"
+            url=$(npx --yes vercel@latest deploy --prebuilt --token "$VERCEL_TOKEN")
+          fi
+          echo "### Đã deploy ($TARGET)" >> "$GITHUB_STEP_SUMMARY"
+          echo "$url" >> "$GITHUB_STEP_SUMMARY"
