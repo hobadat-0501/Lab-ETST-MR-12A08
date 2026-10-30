@@ -1,7 +1,7 @@
 :root {
   --bg: #f6f7f4; --surface: #fff; --ink: #22312e; --muted: #67746f; --line: #e5e9e4;
   --accent: #19745d; --accent-soft: #e9f3ee; --danger: #b3382c; --danger-soft: #fbeceb;
-  --report: #19745d; --report-soft: #dff0e8; --work: #2f66b3; --work-soft: #e2ecf9; --pending: #a86a12; --pending-soft: #fdf3dd;
+  --report: #19745d; --report-soft: #dff0e8; --pending: #a86a12; --pending-soft: #fdf3dd;
   --radius: 10px; --sidebar: 232px;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: var(--ink); background: var(--bg);
   text-rendering: optimizeLegibility;
@@ -81,7 +81,7 @@ input:hover, select:hover { border-color: #c9d1cb }
 .search-box { position: relative; display: block }
 .search-box svg { position: absolute; left: 11px; top: 12px; color: var(--muted); pointer-events: none }
 .search-box input { padding-left: 33px; width: 190px }
-.week { max-height: 620px; overflow: auto; border: 1px solid var(--line); border-radius: 8px }
+.week { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px }
 .week-head, .week-body { display: grid; grid-template-columns: 52px repeat(7, minmax(112px, 1fr)); min-width: 840px }
 .week-head { position: sticky; top: 0; z-index: 3; background: var(--surface); border-bottom: 1px solid var(--line) }
 .day-head { display: grid; justify-items: center; padding: 8px 0; border-left: 1px solid var(--line); color: var(--muted); font-size: 12px }
@@ -91,16 +91,30 @@ input:hover, select:hover { border-color: #c9d1cb }
 .time-col span { padding: 3px 6px 0 0; text-align: right; font-size: 11px; color: var(--muted) }
 .day-col { position: relative; height: calc(var(--hour) * var(--hours)); border-left: 1px solid var(--line); background-image: linear-gradient(var(--line) 1px, transparent 1px); background-size: 100% var(--hour) }
 .day-col.today { background-color: #fafcf9 }
-.event { position: absolute; display: grid; align-content: start; gap: 1px; overflow: hidden; padding: 4px 7px; border: 0; border-left: 3px solid; border-radius: 6px; text-align: left; font-size: 12px; transition: filter .15s }
+.event { position: absolute; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 1px; overflow: hidden; padding: 4px 7px; border: 0; border-left: 3px solid; border-radius: 6px; text-align: left; font-size: 12px; transition: filter .15s }
 .event:hover { filter: brightness(.96) }
 .event strong, .event span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .event span { font-size: 11px; opacity: .85 }
-.event.report { background: var(--report-soft); border-color: var(--report); color: #11503f }
-.event.work { background: var(--work-soft); border-color: var(--work); color: #214b84 }
-.event.pending { background: var(--pending-soft); border-color: var(--pending); color: #7a4c0b; border-style: dashed }
+.event strong { flex: none; line-height: 1.3 }
+/* Short events: title and time share one line so the title is never pushed out of view. */
+.event.compact { flex-direction: row; align-items: center; gap: 6px; padding-block: 2px }
+.event.compact strong { flex: 0 1 auto; max-width: 70% }
+.event.compact span { flex: 1 1 0; min-width: 0 }
+/* Event palette: assigned per event by eventColor() in lib/format.js */
+.c0 { --bg: #dff0e8; --bd: #19745d; --fg: #11503f }
+.c1 { --bg: #e2ecf9; --bd: #2f66b3; --fg: #214b84 }
+.c2 { --bg: #ece6f8; --bd: #6f4fb3; --fg: #4a3380 }
+.c3 { --bg: #fae3ee; --bd: #c2457f; --fg: #86285a }
+.c4 { --bg: #fde9d9; --bd: #d0701f; --fg: #8a4510 }
+.c5 { --bg: #d9f1f2; --bd: #1b8a93; --fg: #115a60 }
+.c6 { --bg: #fbe0de; --bd: #c4453a; --fg: #86281f }
+.c7 { --bg: #f8f0cc; --bd: #a88a10; --fg: #6b5708 }
+.c8 { --bg: #e0e4fa; --bd: #4a55c4; --fg: #2f3786 }
+.c9 { --bg: #e6f1d3; --bd: #6a9a22; --fg: #45661a }
+.event { background-color: color-mix(in srgb, var(--bg) 70%, transparent); border-color: var(--bd); color: var(--fg) }
+.event.pending { background-image: repeating-linear-gradient(135deg, transparent 0 6px, rgb(255 255 255 / .6) 6px 12px) }
 .legend { display: flex; gap: 16px; margin-top: 12px; font-size: 12px; color: var(--muted) }
-.dot { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50% }
-.dot.report { background: var(--report) } .dot.work { background: var(--work) } .dot.pending { background: var(--pending) }
+.swatch { display: inline-block; width: 14px; height: 9px; margin-right: 6px; border-radius: 2px; background: repeating-linear-gradient(135deg, #c9d1cb 0 3px, #fff 3px 6px) }
 
 /* Dialogs */
 .overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: rgb(16 42 38 / .45); overflow-y: auto }
@@ -110,6 +124,7 @@ input:hover, select:hover { border-color: #c9d1cb }
 .modal-head p { margin-top: 4px; color: var(--muted) }
 .modal-head .icon-button { margin: -6px -8px 0 0 }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+.form-row.three { grid-template-columns: 1.5fr 1fr 1fr }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px }
 .details { display: grid; grid-template-columns: 96px 1fr; gap: 8px 12px }
 .details dt { color: var(--muted) }
@@ -186,7 +201,7 @@ td { padding: 12px 8px; border-bottom: 1px solid var(--line); vertical-align: mi
   .cards { grid-template-columns: 1fr }
 }
 @media (max-width: 480px) {
-  .form-row, .stats, .stats.three { grid-template-columns: 1fr }
+  .form-row, .form-row.three, .stats, .stats.three { grid-template-columns: 1fr }
   .details { grid-template-columns: 80px 1fr }
   .modal-actions { flex-direction: column-reverse } .modal-actions > * { width: 100% }
 }
@@ -206,3 +221,11 @@ td { padding: 12px 8px; border-bottom: 1px solid var(--line); vertical-align: mi
 .date-day.selected { background: var(--accent); color: #fff; font-weight: 700 }
 .date-day:disabled { color: #c9d1cc; text-decoration: line-through }
 .hint { font-size: 12px; color: var(--muted); margin: -6px 0 0 }
+
+/* Segmented choice (radio group) */
+.segmented { display: flex; gap: 8px; margin: 0; padding: 0; border: 0; min-width: 0 }
+.segmented legend { padding: 0; margin-bottom: 6px; font-size: 13px; font-weight: 600 }
+.segmented label { position: relative; display: block; flex: 1; text-align: center; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; font-weight: 500; cursor: pointer }
+.segmented label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 700 }
+.segmented label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px }
+.segmented input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer }

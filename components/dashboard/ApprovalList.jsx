@@ -2,7 +2,7 @@
 import { Check, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { longDate, request, timeText } from '../../lib/format'
+import { bookedByLabel, longDate, request, timeText } from '../../lib/format'
 import { useToast } from '../ui/Toast'
 
 const STATUS_LABEL = { pending: 'Pending', confirmed: 'Approved', rejected: 'Rejected' }
@@ -27,9 +27,9 @@ export default function ApprovalList({ events }) {
   return <div className="cards">{events.map(e => {
     const busy = updating === e.id
     return <article className="card" key={e.id}>
-      <header><div><small>{e.activity_type}</small><h2>{e.title}</h2></div><span className={`badge ${e.status}`}>{STATUS_LABEL[e.status]}</span></header>
+      <header><div><small>{e.activity_type}{e.report_scope && ` · ${e.report_scope}`}</small><h2>{e.title}</h2></div><span className={`badge ${e.status}`}>{STATUS_LABEL[e.status]}</span></header>
       <dl className="details">
-        <dt>Booked by</dt><dd>{e.person}</dd>
+        <dt>{bookedByLabel(e)}</dt><dd>{e.person}</dd>
         <dt>Date</dt><dd>{longDate(e.start_at)}</dd>
         <dt>Time</dt><dd>{timeText(e.start_at)} – {timeText(e.end_at)}</dd>
         <dt>Room</dt><dd>{e.room}</dd>

@@ -3,6 +3,7 @@ import { Banknote, CalendarDays, ClipboardCheck, ExternalLink, FlaskConical, Lay
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { usePolling } from '../ui/usePolling'
 
 const NAV = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -15,6 +16,9 @@ export default function Shell({ pendingCount, children }) {
   const pathname = usePathname()
   const router = useRouter()
   const [open, setOpen] = useState(false)
+
+  // Pick up new booking requests without a manual reload (also refreshes the pending badge).
+  usePolling(() => { if (pathname === '/dashboard' || pathname === '/dashboard/approvals') router.refresh() }, 5000)
 
   async function logout() {
     await fetch('/api/dashboard/logout', { method: 'POST' })

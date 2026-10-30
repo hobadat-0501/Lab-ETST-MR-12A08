@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { ACTIVITY_TYPES, CLOSE_HOUR, OPEN_HOUR, ROOM } from '../../lib/constants'
+import { ACTIVITY_TYPES, CLOSE_HOUR, OPEN_HOUR, REPORT_SCOPES, ROOM } from '../../lib/constants'
 import { labDate, labDay, pad } from '../../lib/format'
 import DatePicker from '../ui/DatePicker'
 import Modal from '../ui/Modal'
@@ -29,7 +29,7 @@ function defaults() {
 }
 
 export default function BookingModal({ onClose, onSubmit, onInvalid, busy }) {
-  const [form, setForm] = useState(() => ({ title: '', person: '', activity_type: ACTIVITY_TYPES[0], email: '', ...defaults() }))
+  const [form, setForm] = useState(() => ({ title: '', person: '', activity_type: ACTIVITY_TYPES[0], report_scope: REPORT_SCOPES[0], email: '', ...defaults() }))
   const set = key => e => setForm(f => ({ ...f, [key]: e.target.value }))
   const setTime = key => e => setForm(f => ({ ...f, [key]: formatTyping(e.target.value) }))
   const finishTime = key => () => setForm(f => ({ ...f, [key]: padHour(f[key]) }))
@@ -42,22 +42,26 @@ export default function BookingModal({ onClose, onSubmit, onInvalid, busy }) {
     if (minutes(end) <= minutes(start)) return onInvalid('End time must be after the start time.')
     const startAt = labDate(form.date, start)
     if (+startAt < new Date().setSeconds(0, 0)) return onInvalid('Start time cannot be earlier than now.')
-    onSubmit({ title: form.title, person: form.person, email: form.email, activity_type: form.activity_type, start_at: startAt.toISOString(), end_at: labDate(form.date, end).toISOString() })
+    onSubmit({ title: form.title, person: form.person, email: form.email, activity_type: form.activity_type, report_scope: form.activity_type === 'Report' ? form.report_scope : null, start_at: startAt.toISOString(), end_at: labDate(form.date, end).toISOString() })
   }
 
+  const isReport = form.activity_type === 'Report', isGroup = isReport && form.report_scope === 'Group'
+  const nameLabel = isGroup ? 'Group name or leader' : 'Your name'
   const timeProps = key => ({ required: true, inputMode: 'numeric', autoComplete: 'off', placeholder: 'HH:MM', maxLength: 5, pattern: '([01]?\\d|2[0-3]):[0-5]\\d', title: '24-hour time, e.g. 14:30', value: form[key], onChange: setTime(key), onBlur: finishTime(key) })
 
   return <Modal title="Book the lab" subtitle="Your booking appears on the calendar once it is approved." onClose={onClose} onSubmit={submit}>
     <label>Title<input required minLength="3" maxLength="160" placeholder="e.g. Progress report" value={form.title} onChange={set('title')} /></label>
     <div className="form-row">
-      <label>Your name<input required minLength="2" maxLength="120" autoComplete="name" value={form.person} onChange={set('person')} /></label>
       <label>Type<Select value={form.activity_type} onChange={v => setForm(f => ({ ...f, activity_type: v }))} options={TYPE_OPTIONS} /></label>
-    </div>
-    <div className="form-row">
       <label>Room<input value={ROOM} readOnly disabled /></label>
-      <label>Date<DatePicker value={form.date} min={labDay(new Date())} onChange={v => setForm(f => ({ ...f, date: v }))} /></label>
     </div>
-    <div className="form-row">
+    {isReport && <fieldset className="segmented">
+      <legend>Presented by</legend>
+      {REPORT_SCOPES.map(scope => <label key={scope}><input type="radio" name="report_scope" value={scope} checked={form.report_scope === scope} onChange={set('report_scope')} />{scope}</label>)}
+    </fieldset>}
+    <label>{nameLabel}<input required minLength="2" maxLength="120" autoComplete={isGroup ? 'off' : 'name'} placeholder={isGroup ? 'e.g. Team A, or the leader\'s name' : undefined} value={form.person} onChange={set('person')} /></label>
+    <div className="form-row three">
+      <label>Date<DatePicker value={form.date} min={labDay(new Date())} onChange={v => setForm(f => ({ ...f, date: v }))} /></label>
       <label>From<input {...timeProps('start')} /></label>
       <label>To<input {...timeProps('end')} title="24-hour time, e.g. 15:30" /></label>
     </div>

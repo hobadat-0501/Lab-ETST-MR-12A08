@@ -3,13 +3,15 @@ import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ACTIVITY_TYPES, CLOSE_HOUR, OPEN_HOUR } from '../../lib/constants'
-import { DAY_NAMES, addDays, dayISO, eventColor, labDate, labDay, labHour, longDate, mondayOf, pad, request, shortDate, timeText } from '../../lib/format'
+import { DAY_NAMES, addDays, bookedByLabel, dayISO, eventColor, labDate, labDay, labHour, longDate, mondayOf, pad, request, shortDate, timeText } from '../../lib/format'
 import BookingModal from '../client/BookingModal'
 import Modal from '../ui/Modal'
 import Select from '../ui/Select'
 import { useToast } from '../ui/Toast'
+import { usePolling } from '../ui/usePolling'
 
-const HOUR_PX = 56
+const HOUR_PX = 64
+const POLL_MS = 5000 // how often other people's changes are picked up
 const HOURS = Array.from({ length: CLOSE_HOUR - OPEN_HOUR }, (_, i) => OPEN_HOUR + i)
 const TYPE_FILTER = [{ value: '', label: 'All types' }, ...ACTIVITY_TYPES.map(t => ({ value: t, label: t }))]
 const STATUS_LABEL = { pending: 'Pending approval', confirmed: 'Approved', rejected: 'Rejected' }
@@ -54,11 +56,12 @@ export default function Calendar({ admin = false }) {
       const params = new URLSearchParams({ from: labDate(dayISO(weekStart), '00:00').toISOString(), to: labDate(dayISO(addDays(weekStart, 7)), '00:00').toISOString() })
       setEvents(await request(`${endpoint}?${params}`))
       setError('')
-    } catch (e) { setEvents([]); setError(e.message) }
+    } catch (e) { setError(e.message) } // keep what is already shown if a refresh fails
   }, [weekStart, endpoint])
 
   useEffect(() => { setWeekStart(mondayOf(new Date())) }, [])
   useEffect(() => { load() }, [load])
+  usePolling(load, POLL_MS)
 
   async function book(body) {
     setBusy(true)
@@ -105,8 +108,10 @@ export default function Calendar({ admin = false }) {
             {layoutDay(visible.filter(e => labDay(e.start_at) === iso)).map(({ event: e, lane, lanes }) => {
               const start = Math.max(OPEN_HOUR, labHour(e.start_at)), end = labDay(e.end_at) === iso ? Math.min(CLOSE_HOUR, labHour(e.end_at)) : CLOSE_HOUR
               if (end <= start) return null // outside opening hours (legacy data)
-              return <button key={e.id} className={`event ${eventColor(e)}`} onClick={() => setSelected(e)}
-                style={{ top: (start - OPEN_HOUR) * HOUR_PX + 1, height: Math.max(22, (end - start) * HOUR_PX - 2), left: `calc(${lane / lanes * 100}% + 2px)`, width: `calc(${100 / lanes}% - 4px)` }}>
+              const height = Math.max(26, (end - start) * HOUR_PX - 2)
+              return <button key={e.id} className={`event ${eventColor(e)}${height < 56 ? ' compact' : ''}`} onClick={() => setSelected(e)}
+                title={`${e.title} · ${timeText(e.start_at)} – ${timeText(e.end_at)} · ${e.person}`}
+                style={{ top: (start - OPEN_HOUR) * HOUR_PX + 1, height, left: `calc(${lane / lanes * 100}% + 2px)`, width: `calc(${100 / lanes}% - 4px)` }}>
                 <strong>{e.title}</strong><span>{timeText(e.start_at)} – {timeText(e.end_at)} · {e.room}</span>
               </button>
             })}
@@ -115,16 +120,16 @@ export default function Calendar({ admin = false }) {
       </div>
     </div>
     <div className="legend">
-      <span><i className="dot report" />Report</span><span><i className="dot work" />Work</span>{admin && <span><i className="dot pending" />Pending</span>}
+      <span>Each booking gets its own color.</span>{admin && <span><i className="swatch" />Striped = pending approval</span>}
     </div>
 
     {selected && <Modal title={selected.title} subtitle={admin ? STATUS_LABEL[selected.status] : undefined} onClose={() => setSelected(null)}>
       <dl className="details">
-        <dt>Type</dt><dd>{selected.activity_type}</dd>
+        <dt>Type</dt><dd>{selected.activity_type}{selected.report_scope && ` · ${selected.report_scope}`}</dd>
         <dt>Date</dt><dd>{longDate(selected.start_at)}</dd>
         <dt>Time</dt><dd>{timeText(selected.start_at)} – {timeText(selected.end_at)}</dd>
         <dt>Room</dt><dd>{selected.room}</dd>
-        <dt>Booked by</dt><dd>{selected.person}</dd>
+        <dt>{bookedByLabel(selected)}</dt><dd>{selected.person}</dd>
         {selected.email && <><dt>Email</dt><dd>{selected.email}</dd></>}
       </dl>
       <div className="modal-actions">
