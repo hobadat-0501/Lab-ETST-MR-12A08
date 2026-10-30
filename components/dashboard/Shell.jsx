@@ -29,10 +29,10 @@ export default function Shell({ pendingCount, children }) {
   return <div className="shell">
     <header className="mobile-bar">
       <button className="icon-button" aria-label="Open menu" aria-expanded={open} onClick={() => setOpen(!open)}><Menu size={20} /></button>
-      <div className="brand"><span className="brand-mark"><FlaskConical size={18} /></span><strong>ETST-MR</strong></div>
+      <div className="brand"><span className="brand-mark"><FlaskConical size={18} /></span><strong>ETST-MR LAB</strong></div>
     </header>
     <aside className={`sidebar${open ? ' open' : ''}`}>
-      <div className="brand"><span className="brand-mark"><FlaskConical size={18} /></span><strong>ETST-MR</strong></div>
+      <div className="brand"><span className="brand-mark"><FlaskConical size={18} /></span><strong>ETST-MR LAB</strong></div>
       <nav>
         {NAV.map(({ href, label, icon: Icon, badge }) => {
           const active = href === '/dashboard' ? pathname === href : pathname.startsWith(href)

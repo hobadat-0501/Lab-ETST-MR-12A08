@@ -23,7 +23,7 @@ export default function LoginForm() {
 
   return <main className="auth-page">
     <form className="auth-card" onSubmit={submit}>
-      <div className="brand"><span className="brand-mark"><FlaskConical size={18} /></span><strong>ETST-MR</strong></div>
+      <div className="brand"><span className="brand-mark"><FlaskConical size={18} /></span><strong>ETST-MR LAB</strong></div>
       <h1>Dashboard sign in</h1>
       <label>Username<input required autoFocus autoComplete="username" value={form.username} onChange={set('username')} /></label>
       <label>Password<input required type="password" autoComplete="current-password" value={form.password} onChange={set('password')} /></label>

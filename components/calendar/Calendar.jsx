@@ -2,7 +2,7 @@
 import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ACTIVITY_TYPES, CLOSE_HOUR, OPEN_HOUR } from '../../lib/constants'
+import { ACTIVITY_TYPES, CLOSE_HOUR, OPEN_HOUR, ROOM_LABEL } from '../../lib/constants'
 import { DAY_NAMES, addDays, bookedByLabel, dayISO, eventColor, labDate, labDay, labHour, longDate, mondayOf, pad, request, shortDate, timeText } from '../../lib/format'
 import BookingModal from '../client/BookingModal'
 import Modal from '../ui/Modal'
@@ -76,7 +76,7 @@ export default function Calendar({ admin = false }) {
   if (!weekStart) return <section className="calendar" aria-busy="true" />
 
   const needle = query.trim().toLowerCase()
-  const visible = events.filter(e => (!type || e.activity_type === type) && (!needle || `${e.title} ${e.person} ${e.room}`.toLowerCase().includes(needle)))
+  const visible = events.filter(e => (!type || e.activity_type === type) && (!needle || `${e.title} ${e.person}`.toLowerCase().includes(needle)))
   const today = labDay(new Date())
 
   return <section className="calendar">
@@ -112,23 +112,21 @@ export default function Calendar({ admin = false }) {
               return <button key={e.id} className={`event ${eventColor(e)}${height < 56 ? ' compact' : ''}`} onClick={() => setSelected(e)}
                 title={`${e.title} · ${timeText(e.start_at)} – ${timeText(e.end_at)} · ${e.person}`}
                 style={{ top: (start - OPEN_HOUR) * HOUR_PX + 1, height, left: `calc(${lane / lanes * 100}% + 2px)`, width: `calc(${100 / lanes}% - 4px)` }}>
-                <strong>{e.title}</strong><span>{timeText(e.start_at)} – {timeText(e.end_at)} · {e.room}</span>
+                <strong>{e.title}</strong><span>{timeText(e.start_at)} – {timeText(e.end_at)} · {ROOM_LABEL}</span>
               </button>
             })}
           </div>
         })}
       </div>
     </div>
-    <div className="legend">
-      <span>Each booking gets its own color.</span>{admin && <span><i className="swatch" />Striped = pending approval</span>}
-    </div>
+    {admin && <div className="legend"><span><i className="swatch" />Striped = pending approval</span></div>}
 
     {selected && <Modal title={selected.title} subtitle={admin ? STATUS_LABEL[selected.status] : undefined} onClose={() => setSelected(null)}>
       <dl className="details">
         <dt>Type</dt><dd>{selected.activity_type}{selected.report_scope && ` · ${selected.report_scope}`}</dd>
         <dt>Date</dt><dd>{longDate(selected.start_at)}</dd>
         <dt>Time</dt><dd>{timeText(selected.start_at)} – {timeText(selected.end_at)}</dd>
-        <dt>Room</dt><dd>{selected.room}</dd>
+        <dt>Room</dt><dd>{ROOM_LABEL}</dd>
         <dt>{bookedByLabel(selected)}</dt><dd>{selected.person}</dd>
         {selected.email && <><dt>Email</dt><dd>{selected.email}</dd></>}
       </dl>

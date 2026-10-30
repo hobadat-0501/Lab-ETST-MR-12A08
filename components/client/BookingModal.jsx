@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { ACTIVITY_TYPES, CLOSE_HOUR, OPEN_HOUR, REPORT_SCOPES, ROOM } from '../../lib/constants'
+import { ACTIVITY_TYPES, CLOSE_HOUR, OPEN_HOUR, REPORT_SCOPES, ROOM_LABEL } from '../../lib/constants'
 import { labDate, labDay, pad } from '../../lib/format'
 import DatePicker from '../ui/DatePicker'
 import Modal from '../ui/Modal'
@@ -53,7 +53,7 @@ export default function BookingModal({ onClose, onSubmit, onInvalid, busy }) {
     <label>Title<input required minLength="3" maxLength="160" placeholder="e.g. Progress report" value={form.title} onChange={set('title')} /></label>
     <div className="form-row">
       <label>Type<Select value={form.activity_type} onChange={v => setForm(f => ({ ...f, activity_type: v }))} options={TYPE_OPTIONS} /></label>
-      <label>Room<input value={ROOM} readOnly disabled /></label>
+      <label>Room<input value={ROOM_LABEL} readOnly disabled /></label>
     </div>
     {isReport && <fieldset className="segmented">
       <legend>Presented by</legend>

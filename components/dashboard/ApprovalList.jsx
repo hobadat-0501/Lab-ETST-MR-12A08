@@ -2,6 +2,7 @@
 import { Check, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { ROOM_LABEL } from '../../lib/constants'
 import { bookedByLabel, longDate, request, timeText } from '../../lib/format'
 import { useToast } from '../ui/Toast'
 
@@ -32,7 +33,7 @@ export default function ApprovalList({ events }) {
         <dt>{bookedByLabel(e)}</dt><dd>{e.person}</dd>
         <dt>Date</dt><dd>{longDate(e.start_at)}</dd>
         <dt>Time</dt><dd>{timeText(e.start_at)} – {timeText(e.end_at)}</dd>
-        <dt>Room</dt><dd>{e.room}</dd>
+        <dt>Room</dt><dd>{ROOM_LABEL}</dd>
         {e.email && <><dt>Email</dt><dd>{e.email}</dd></>}
         {e.reject_reason && <><dt>Reason</dt><dd>{e.reject_reason}</dd></>}
       </dl>

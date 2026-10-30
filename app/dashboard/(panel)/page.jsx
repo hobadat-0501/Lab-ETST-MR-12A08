@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { ROOM_LABEL } from '../../../lib/constants'
 import { dayNum, longDate, money, monthLabel, monthShort, timeText } from '../../../lib/format'
 import { SERVICE_ERROR } from '../../../lib/prisma'
 import { countPendingEvents, currentMonth, financeSummary, listEvents } from '../../../lib/queries'
@@ -28,7 +29,7 @@ export default async function Overview() {
         <h2>Next pending requests</h2>
         {data.pending.length ? data.pending.map(e => <Link key={e.id} href="/dashboard/approvals" className="row">
           <div className="date-box"><b>{dayNum(e.startAt)}</b><small>{monthShort(e.startAt)}</small></div>
-          <div className="row-main"><strong>{e.title}</strong><span>{e.person} · {e.room} · {longDate(e.startAt)}</span></div>
+          <div className="row-main"><strong>{e.title}</strong><span>{e.person} · {ROOM_LABEL} · {longDate(e.startAt)}</span></div>
           <small>{timeText(e.startAt)} – {timeText(e.endAt)}</small>
         </Link>) : <p className="empty">No requests are waiting for approval.</p>}
       </section>
