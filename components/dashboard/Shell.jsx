@@ -1,5 +1,5 @@
 'use client'
-import { Banknote, CalendarDays, ClipboardCheck, ExternalLink, FlaskConical, LayoutDashboard, LogOut, Menu } from 'lucide-react'
+import { Banknote, CalendarDays, ClipboardCheck, ExternalLink, FlaskConical, LayoutDashboard, ListChecks, LogOut, Menu } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -9,6 +9,7 @@ const NAV = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/dashboard/calendar', label: 'Calendar', icon: CalendarDays },
   { href: '/dashboard/approvals', label: 'Approvals', icon: ClipboardCheck, badge: true },
+  { href: '/dashboard/events', label: 'Events', icon: ListChecks },
   { href: '/dashboard/finance', label: 'Finance', icon: Banknote },
 ]
 

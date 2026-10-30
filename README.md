@@ -24,14 +24,9 @@ Set `ADMIN_USERNAME`, `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` as environment
 
 Text input (titles, names, rooms, descriptions) can be written in any language, including Vietnamese.
 
-## Automatic cleanup
+## Managing events
 
-A daily Vercel Cron job (`vercel.json`, 20:00 UTC = 03:00 in Vietnam) calls `/api/cron/cleanup` and deletes events after 30 days (`RETENTION_DAYS`):
-
-- pending or rejected requests, 30 days after they were created;
-- approved events, 30 days after they ended.
-
-Set a `CRON_SECRET` environment variable in Vercel (any long random string); Vercel sends it automatically and the endpoint refuses requests without it.
+Nothing is deleted automatically. In the dashboard, **Events** lists every booking with filters (status, type, date range, search). Tick rows (or select everything that matches the current filter) and delete them in one go.
 
 ## Layout
 

@@ -10,12 +10,12 @@ const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 const parse = iso => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d) }
 const MONTHS = Array.from({ length: 12 }, (_, i) => ({ value: i, label: new Intl.DateTimeFormat('en-GB', { month: 'long' }).format(new Date(2000, i, 1)) }))
 
-// Custom date picker (replaces <input type="date">): pick the day, month and year. value, min and onChange use "YYYY-MM-DD".
-export default function DatePicker({ value, onChange, min, ariaLabel }) {
+// Custom date picker (replaces <input type="date">): pick the day, month and year. value, min and onChange use "YYYY-MM-DD"; value may be empty.
+export default function DatePicker({ value, onChange, min, ariaLabel, placeholder = 'Select date' }) {
   const popId = useId()
   const root = useRef(null)
   const [open, setOpen] = useState(false)
-  const [focus, setFocus] = useState(value) // the day that can be reached with the keyboard
+  const [focus, setFocus] = useState(value ?? dayISO(new Date())) // the day that can be reached with the keyboard
   const today = dayISO(new Date())
   const view = parse(focus)
   const first = new Date(view.getFullYear(), view.getMonth(), 1)
@@ -32,7 +32,7 @@ export default function DatePicker({ value, onChange, min, ariaLabel }) {
 
   useEffect(() => { if (open) root.current?.querySelector(`[data-day="${focus}"]`)?.focus() }, [open, focus])
 
-  const show = () => { setFocus(value); setOpen(true) }
+  const show = () => { setFocus(value ?? (min && min > today ? min : today)); setOpen(true) }
   const pick = iso => { if (allowed(iso)) { onChange(iso); setOpen(false); root.current?.querySelector('.select-button')?.focus() } }
   // Jump to a month/year, keeping the day of month where possible and never landing before `min`.
   const goTo = (year, month) => {
@@ -53,7 +53,7 @@ export default function DatePicker({ value, onChange, min, ariaLabel }) {
 
   return <div className="select date-picker" ref={root}>
     <button type="button" className="select-button" aria-label={ariaLabel} aria-haspopup="dialog" aria-expanded={open} aria-controls={popId} onClick={() => open ? setOpen(false) : show()}>
-      <span>{txDate(value)}</span><CalendarDays size={16} />
+      <span className={value ? undefined : 'placeholder'}>{value ? txDate(value) : placeholder}</span><CalendarDays size={16} />
     </button>
     {open && createPortal(<div className="date-pop" ref={floating.panel} id={popId} role="dialog" aria-label="Choose a date" onKeyDown={onKeyDown} data-floating style={floating.style}>
       <div className="date-nav">

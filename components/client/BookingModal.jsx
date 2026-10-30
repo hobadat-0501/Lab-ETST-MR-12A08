@@ -65,7 +65,6 @@ export default function BookingModal({ onClose, onSubmit, onInvalid, busy }) {
       <label>From<input {...timeProps('start')} /></label>
       <label>To<input {...timeProps('end')} title="24-hour time, e.g. 15:30" /></label>
     </div>
-    <p className="hint">The lab is open {OPEN}–{CLOSE}. Bookings cannot start in the past.</p>
     <label>Email <span className="optional">(optional)</span><input type="email" autoComplete="email" placeholder="you@example.com" value={form.email} onChange={set('email')} /></label>
     <div className="modal-actions">
       <button className="secondary-button" type="button" onClick={onClose}>Cancel</button>
